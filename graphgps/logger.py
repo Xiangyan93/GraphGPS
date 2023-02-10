@@ -49,6 +49,8 @@ class CustomLogger(Logger):
 
     # basic properties
     def basic(self):
+        if self._size_current == 0:
+            return {}
         stats = {
             'loss': round(self._loss / self._size_current, max(8, cfg.round)),
             'lr': round(self._lr, max(8, cfg.round)),
@@ -62,6 +64,8 @@ class CustomLogger(Logger):
 
     # task properties
     def classification_binary(self):
+        if len(self._true) == 0:
+            return {}
         true = torch.cat(self._true).squeeze(-1)
         pred_score = torch.cat(self._pred)
         pred_int = self._get_pred_int(pred_score)
