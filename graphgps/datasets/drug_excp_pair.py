@@ -10,6 +10,7 @@ from torch_geometric.data import InMemoryDataset, download_url, extract_gz, extr
 from torch_geometric.utils import from_smiles
 import pandas as pd
 import json
+from tqdm import tqdm
 from .features_generator import FeaturesGenerator
 
 
@@ -49,7 +50,7 @@ class DrugExcpPair(InMemoryDataset):
             data_list = []
             df = pd.read_csv(file)
             df['smiles'] = df['mixture'].apply(lambda x: json.loads(x)[0] + '.' + json.loads(x)[2])
-            for j in df.index:
+            for j in tqdm(df.index, total=len(df)):
                 data = from_smiles(df['smiles'][j])
                 data.y = torch.tensor([df['class'][j]], dtype=torch.long).view(1, -1)
                 data.smiles = df['smiles'][j].split('.')

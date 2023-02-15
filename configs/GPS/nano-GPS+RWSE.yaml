@@ -33,7 +33,7 @@ model:
   graph_pooling: mean
 gt:
   layer_type: CustomGatedGCN+Transformer
-  layers: 5
+  layers: 10
   n_heads: 4
   dim_hidden: 64  # `gt.dim_hidden` must match `gnn.dim_inner`
   dropout: 0.05
