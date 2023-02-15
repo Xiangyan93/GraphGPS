@@ -1,5 +1,5 @@
 import torch.nn as nn
-
+import torch
 import torch_geometric.graphgym.register as register
 from torch_geometric.graphgym import cfg
 from torch_geometric.graphgym.register import register_head
@@ -33,6 +33,8 @@ class SANGraphHead(nn.Module):
 
     def forward(self, batch):
         graph_emb = self.pooling_fun(batch.x, batch.batch)
+        if cfg.gnn.rdkit:
+            graph_emb = torch.cat([graph_emb, batch.features], dim=1)
         for l in range(self.L):
             graph_emb = self.FC_layers[l](graph_emb)
             graph_emb = self.activation(graph_emb)

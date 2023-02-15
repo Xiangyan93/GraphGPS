@@ -2,7 +2,8 @@ import logging
 import os.path as osp
 import time
 from functools import partial
-
+from random import Random
+import math
 import numpy as np
 import torch
 import torch_geometric.transforms as T
@@ -25,6 +26,8 @@ from graphgps.transform.task_preprocessing import task_specific_preprocessing
 from graphgps.transform.transforms import (pre_transform_in_memory,
                                            typecast_x, concat_x_and_pos,
                                            clip_graphs_to_size)
+from torch_geometric.datasets.molecule_net import MoleculeNet
+from ..datasets.drug_excp_pair import DrugExcpPair
 
 
 def log_loaded_dataset(dataset, format, name):
@@ -133,6 +136,12 @@ def load_dataset_master(format, name, dataset_dir):
         elif pyg_dataset_id == 'AQSOL':
             dataset = preformat_AQSOL(dataset_dir, name)
 
+        elif pyg_dataset_id == 'MoleculeNet':
+            dataset = preformat_MoleculeNet(dataset_dir, name)
+
+        elif pyg_dataset_id == 'DrugExcpPair':
+            dataset = preformat_DrugExcpPair(dataset_dir)
+
         elif pyg_dataset_id == 'VOCSuperpixels':
             dataset = preformat_VOCSuperpixels(dataset_dir, name,
                                                cfg.dataset.slic_compactness)
@@ -222,7 +231,6 @@ def load_dataset_master(format, name, dataset_dir):
 
     # Verify or generate dataset train/val/test splits
     prepare_splits(dataset)
-
     # Precompute in-degree histogram if needed for PNAConv.
     if cfg.gt.layer_type.startswith('PNA') and len(cfg.gt.pna_degrees) == 0:
         cfg.gt.pna_degrees = compute_indegree_histogram(
@@ -580,6 +588,72 @@ def preformat_AQSOL(dataset_dir):
     return dataset
 
 
+def get_split_sizes(n_samples: int,
+                    split_ratio):
+    if not np.isclose(sum(split_ratio), 1.0):
+        raise ValueError(f"Split split_ratio do not sum to 1. Received splits: {split_ratio}")
+    if any([size < 0 for size in split_ratio]):
+        raise ValueError(f"Split split_ratio must be non-negative. Received splits: {split_ratio}")
+    acc_ratio = np.cumsum([0.] + split_ratio)
+    split_sizes = [math.ceil(acc_ratio[i + 1] * n_samples) - math.ceil(acc_ratio[i] * n_samples)
+                   for i in range(len(acc_ratio) - 1)]
+    if sum(split_sizes) == n_samples + 1:
+        split_sizes[-1] -= 1
+    assert sum(split_sizes) == n_samples
+    return split_sizes
+
+
+def preformat_MoleculeNet(dataset_dir, name, seed=0):
+    dataset = MoleculeNet(root=dataset_dir, name=name)
+
+    sizes = [0.8, 0.0, 0.2]
+    # sizes = [0.8, 0.1, 0.1]
+    n_samples = len(dataset)
+    random = Random(seed)
+    np.random.seed(seed)
+    split_index = [[] for size in sizes]
+    indices = list(range(n_samples))
+    random.shuffle(indices)
+    index_size = get_split_sizes(n_samples, split_ratio=sizes)
+    end = 0
+    for i, size in enumerate(index_size):
+        start = end
+        end = start + size
+        split_index[i] = indices[start:end]
+
+    dataset.split_idxs = split_index
+    return dataset
+
+
+def preformat_DrugExcpPair(dataset_dir):
+    dataset = join_dataset_splits(
+        [DrugExcpPair(root=dataset_dir, name=name)
+         for name in ['large', 'ext']]
+    )
+    """
+    dataset = DrugExcpPair(root=dataset_dir, name='1440')
+    seed = 1
+    sizes = [0.9, 0.0, 0.1]
+    # sizes = [0.8, 0.1, 0.1]
+    n_samples = len(dataset)
+    random = Random(seed)
+    np.random.seed(seed)
+    split_index = [[] for size in sizes]
+    indices = list(range(n_samples))
+    random.shuffle(indices)
+    index_size = get_split_sizes(n_samples, split_ratio=sizes)
+    end = 0
+    for i, size in enumerate(index_size):
+        start = end
+        end = start + size
+        split_index[i] = indices[start:end]
+
+    dataset.split_idxs = split_index
+    print(split_index)
+    """
+    return dataset
+
+
 def preformat_VOCSuperpixels(dataset_dir, name, slic_compactness):
     """Load and preformat VOCSuperpixels dataset.
 
@@ -623,19 +697,30 @@ def join_dataset_splits(datasets):
     Returns:
         joint dataset with `split_idxs` property storing the split indices
     """
-    assert len(datasets) == 3, "Expecting train, val, test datasets"
+    if len(datasets) == 2:
+        n1, n2 = len(datasets[0]), len(datasets[1])
+        data_list = [datasets[0].get(i) for i in range(n1)] + \
+                    [datasets[1].get(i) for i in range(n2)]
 
-    n1, n2, n3 = len(datasets[0]), len(datasets[1]), len(datasets[2])
-    data_list = [datasets[0].get(i) for i in range(n1)] + \
-                [datasets[1].get(i) for i in range(n2)] + \
-                [datasets[2].get(i) for i in range(n3)]
+        datasets[0]._indices = None
+        datasets[0]._data_list = data_list
+        datasets[0].data, datasets[0].slices = datasets[0].collate(data_list)
+        split_idxs = [list(range(n1)),
+                      [],
+                      list(range(n1, n1 + n2))]
+        datasets[0].split_idxs = split_idxs
+    elif len(datasets) == 3:#  "Expecting train, val, test datasets"
+        n1, n2, n3 = len(datasets[0]), len(datasets[1]), len(datasets[2])
+        data_list = [datasets[0].get(i) for i in range(n1)] + \
+                    [datasets[1].get(i) for i in range(n2)] + \
+                    [datasets[2].get(i) for i in range(n3)]
 
-    datasets[0]._indices = None
-    datasets[0]._data_list = data_list
-    datasets[0].data, datasets[0].slices = datasets[0].collate(data_list)
-    split_idxs = [list(range(n1)),
-                  list(range(n1, n1 + n2)),
-                  list(range(n1 + n2, n1 + n2 + n3))]
-    datasets[0].split_idxs = split_idxs
+        datasets[0]._indices = None
+        datasets[0]._data_list = data_list
+        datasets[0].data, datasets[0].slices = datasets[0].collate(data_list)
+        split_idxs = [list(range(n1)),
+                      list(range(n1, n1 + n2)),
+                      list(range(n1 + n2, n1 + n2 + n3))]
+        datasets[0].split_idxs = split_idxs
 
     return datasets[0]
