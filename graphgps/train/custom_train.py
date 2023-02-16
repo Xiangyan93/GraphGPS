@@ -2,6 +2,7 @@ import logging
 import time
 
 import numpy as np
+import pandas as pd
 import torch
 from torch_geometric.graphgym.checkpoint import load_ckpt, save_ckpt, clean_ckpt
 from torch_geometric.graphgym.config import cfg
@@ -48,7 +49,7 @@ def train_epoch(logger, loader, model, optimizer, scheduler, batch_accumulation)
 
 
 @torch.no_grad()
-def eval_epoch(logger, loader, model, split='val'):
+def eval_epoch(logger, loader, model, split='val', cur_epoch=0):
     model.eval()
     time_start = time.time()
     for batch in loader:
@@ -75,6 +76,9 @@ def eval_epoch(logger, loader, model, split='val'):
                             dataset_name=cfg.dataset.name,
                             **extra_stats)
         time_start = time.time()
+    if logger._true:
+        pd.DataFrame({'true': torch.cat(logger._true).ravel(), 'pred': torch.cat(logger._pred)}).\
+            to_csv('%s/pred_%d.csv' % (logger.out_dir, cur_epoch), index=False)
 
 
 @register_train('custom')
@@ -125,7 +129,7 @@ def custom_train(loggers, loaders, model, optimizer, scheduler):
         if is_eval_epoch(cur_epoch):
             for i in range(1, num_splits):
                 eval_epoch(loggers[i], loaders[i], model,
-                           split=split_names[i - 1])
+                           split=split_names[i - 1], cur_epoch=cur_epoch)
                 perf[i].append(loggers[i].write_epoch(cur_epoch))
         else:
             for i in range(1, num_splits):
