@@ -628,7 +628,7 @@ def preformat_MoleculeNet(dataset_dir, name, seed=0):
 def preformat_DrugExcpPair(dataset_dir, name):
     if name == '1440_ext':
         names = ['1440', 'ext']
-    elif name.startwith('large'):
+    elif name.startswith('large'):
         names = [name, 'ext']
     else:
         raise ValueError(f"Unknown name: {name}")
