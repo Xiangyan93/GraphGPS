@@ -140,7 +140,7 @@ def load_dataset_master(format, name, dataset_dir):
             dataset = preformat_MoleculeNet(dataset_dir, name)
 
         elif pyg_dataset_id == 'DrugExcpPair':
-            dataset = preformat_DrugExcpPair(dataset_dir)
+            dataset = preformat_DrugExcpPair(dataset_dir, name)
 
         elif pyg_dataset_id == 'VOCSuperpixels':
             dataset = preformat_VOCSuperpixels(dataset_dir, name,
@@ -625,10 +625,16 @@ def preformat_MoleculeNet(dataset_dir, name, seed=0):
     return dataset
 
 
-def preformat_DrugExcpPair(dataset_dir):
+def preformat_DrugExcpPair(dataset_dir, name):
+    if name == '1440_ext':
+        names = ['1440', 'ext']
+    elif name.startwith('large'):
+        names = [name, 'ext']
+    else:
+        raise ValueError(f"Unknown name: {name}")
     dataset = join_dataset_splits(
-        [DrugExcpPair(root=dataset_dir, name=name)
-         for name in ['large', 'ext']]
+        [DrugExcpPair(root=dataset_dir, name=n)
+         for n in names]
     )
     """
     dataset = DrugExcpPair(root=dataset_dir, name='1440')

@@ -23,7 +23,7 @@ class DrugExcpPair(InMemoryDataset):
     def __init__(
         self,
         root: str,
-        name: Literal['1440', 'ext', 'large'] = None,
+        name: str = None,
         transform: Optional[Callable] = None,
         pre_transform: Optional[Callable] = None,
         pre_filter: Optional[Callable] = None,
@@ -34,11 +34,11 @@ class DrugExcpPair(InMemoryDataset):
 
     @property
     def raw_file_names(self) -> List[str]:
-        return ['1440.csv', 'ext.csv', 'large.csv']
+        return ['1440.csv', 'ext.csv'] + ['large_%d.csv' % i for i in range(10)]
 
     @property
     def processed_file_names(self) -> List[str]:
-        return ['1440.pt', 'ext.pt', 'large.pt']
+        return ['1440.pt', 'ext.pt'] + ['large_%d.pt' % i for i in range(10)]
 
     def download(self):
         path = download_url(self.url, self.raw_dir)

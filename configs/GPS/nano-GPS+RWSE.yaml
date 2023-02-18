@@ -5,6 +5,7 @@ wandb:
   project: nano
 dataset:
   format: PyG-DrugExcpPair
+  name: large_0
   task: graph
   task_type: classification
   transductive: False
@@ -25,7 +26,7 @@ train:
   mode: custom
   batch_size: 32
   eval_period: 1
-  ckpt_period: 100
+  ckpt_period: 1
 model:
   type: GPSModel
   loss_fun: cross_entropy
