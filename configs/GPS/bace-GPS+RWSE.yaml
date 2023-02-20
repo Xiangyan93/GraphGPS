@@ -1,4 +1,4 @@
-out_dir: results
+out_dir: results/seed0
 metric_best: auc
 wandb:
   use: True
