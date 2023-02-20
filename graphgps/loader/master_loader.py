@@ -5,6 +5,7 @@ from functools import partial
 from random import Random
 import math
 import numpy as np
+import json
 import torch
 import torch_geometric.transforms as T
 from numpy.random import default_rng
@@ -628,35 +629,24 @@ def preformat_MoleculeNet(dataset_dir, name, seed=0):
 def preformat_DrugExcpPair(dataset_dir, name):
     if name == '1440_ext':
         names = ['1440', 'ext']
+        dataset = join_dataset_splits(
+            [DrugExcpPair(root=dataset_dir, name=n)
+             for n in names]
+        )
     elif name.startswith('large'):
         names = [name, 'ext']
+        dataset = join_dataset_splits(
+            [DrugExcpPair(root=dataset_dir, name=n)
+             for n in names]
+        )
     else:
-        raise ValueError(f"Unknown name: {name}")
-    dataset = join_dataset_splits(
-        [DrugExcpPair(root=dataset_dir, name=n)
-         for n in names]
-    )
-    """
-    dataset = DrugExcpPair(root=dataset_dir, name='1440')
-    seed = 1
-    sizes = [0.9, 0.0, 0.1]
-    # sizes = [0.8, 0.1, 0.1]
-    n_samples = len(dataset)
-    random = Random(seed)
-    np.random.seed(seed)
-    split_index = [[] for size in sizes]
-    indices = list(range(n_samples))
-    random.shuffle(indices)
-    index_size = get_split_sizes(n_samples, split_ratio=sizes)
-    end = 0
-    for i, size in enumerate(index_size):
-        start = end
-        end = start + size
-        split_index[i] = indices[start:end]
+        dataset = DrugExcpPair(root=dataset_dir, name='1440')
+        with open("%s/raw/index/%s_train.json" % (dataset_dir, name), "r") as file:
+            train_index = json.load(file)
+        with open("%s/raw/index/%s_test.json" % (dataset_dir, name), "r") as file:
+            test_index = json.load(file)
+        dataset.split_idxs = [train_index, [], test_index]
 
-    dataset.split_idxs = split_index
-    print(split_index)
-    """
     return dataset
 
 
