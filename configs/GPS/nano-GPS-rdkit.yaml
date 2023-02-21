@@ -5,7 +5,7 @@ wandb:
   project: nano
 dataset:
   format: PyG-DrugExcpPair
-  name: 10-fold-CV_seed7_split8
+  name: large_0
   task: graph
   task_type: classification
   transductive: False
