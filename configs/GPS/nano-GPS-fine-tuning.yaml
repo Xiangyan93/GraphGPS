@@ -26,12 +26,15 @@ posenc_LapPE:
   layers: 2
   n_heads: 4  # Only used when `posenc.model: Transformer`
   raw_norm_type: none
+pretrained:
+  dir: results/nano-GPS
+  reset_prediction_head: True
+  freeze_main: False
 train:
   mode: custom
   batch_size: 32
   eval_period: 1
   ckpt_period: 100
-  ckpt_clean: False
 model:
   type: GPSModel
   loss_fun: cross_entropy

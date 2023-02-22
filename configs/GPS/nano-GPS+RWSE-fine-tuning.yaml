@@ -5,27 +5,27 @@ wandb:
   project: nano
 dataset:
   format: PyG-DrugExcpPair
-  name: large_0
+  name: 1440_ext
   task: graph
   task_type: classification
   transductive: False
   node_encoder: True
-  node_encoder_name: Atom+LapPE
+  node_encoder_name: Atom+RWSE
   node_encoder_bn: False
   edge_encoder: True
   edge_encoder_name: Bond
   edge_encoder_bn: False
-posenc_LapPE:
+posenc_RWSE:
   enable: True
-  eigen:
-    laplacian_norm: none
-    eigvec_norm: L2
-    max_freqs: 8
-  model: DeepSet
-  dim_pe: 8
-  layers: 2
-  n_heads: 4  # Only used when `posenc.model: Transformer`
-  raw_norm_type: none
+  kernel:
+    times_func: range(1,17)
+  model: Linear
+  dim_pe: 16
+  raw_norm_type: BatchNorm
+pretrained:
+  dir: results/nano-GPS+RWSE
+  reset_prediction_head: True
+  freeze_main: False
 train:
   mode: custom
   batch_size: 32
@@ -49,7 +49,7 @@ gt:
 gnn:
   head: san_graph
   layers_pre_mp: 0
-  layers_post_mp: 5  # Not used when `gnn.head: san_graph`
+  layers_post_mp: 3  # Not used when `gnn.head: san_graph`
   dim_inner: 64  # `gt.dim_hidden` must match `gnn.dim_inner`
   batchnorm: True
   act: relu
@@ -62,7 +62,7 @@ optim:
   optimizer: adamW
   weight_decay: 1e-5
   base_lr: 0.0001
-  max_epoch: 100
+  max_epoch: 10
   scheduler: cosine_with_warmup
   num_warmup_epochs: 5
 #optim:
