@@ -25,6 +25,7 @@ class SANGraphHead(nn.Module):
         list_FC_layers.append(
             nn.Linear(dim_in // 2 ** L, dim_out, bias=True))
         self.FC_layers = nn.ModuleList(list_FC_layers)
+        self.batch_norms = nn.ModuleList([nn.BatchNorm1d(dim_in // 2 ** (l + 1)) for l in range(L)])
         self.L = L
         self.activation = register.act_dict[cfg.gnn.act]()
 
@@ -38,6 +39,7 @@ class SANGraphHead(nn.Module):
         for l in range(self.L):
             graph_emb = self.FC_layers[l](graph_emb)
             graph_emb = self.activation(graph_emb)
+            graph_emb = self.batch_norms[l](graph_emb)
         graph_emb = self.FC_layers[self.L](graph_emb)
         batch.graph_feature = graph_emb
         pred, label = self._apply_index(batch)

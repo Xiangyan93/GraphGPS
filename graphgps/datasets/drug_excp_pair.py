@@ -46,6 +46,7 @@ class DrugExcpPair(InMemoryDataset):
 
     def process(self):
         fg = FeaturesGenerator(features_generator_name='rdkit_2d_normalized')
+        fg_morgan = FeaturesGenerator(features_generator_name='morgan', num_bits=1024)
         for i, file in enumerate(self.raw_paths):
             data_list = []
             df = pd.read_csv(file)
@@ -60,6 +61,7 @@ class DrugExcpPair(InMemoryDataset):
                         mol = Chem.MolFromSmiles(smiles)
                         fs = fg(mol)
                         fs = np.where(np.isnan(fs), 0, fs)
+                        fs = np.concatenate([fs, fg_morgan(mol) - 0.5])
                         SMILES_TO_FEATURES[smiles] = torch.tensor(fs, dtype=torch.float32)
                     features.append(SMILES_TO_FEATURES[smiles])
                 data.features = torch.cat(features).view(1, -1)

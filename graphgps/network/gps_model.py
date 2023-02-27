@@ -101,7 +101,7 @@ class GPSModel(torch.nn.Module):
 
         GNNHead = register.head_dict[cfg.gnn.head]
         if cfg.gnn.rdkit:
-            dim_in = cfg.gnn.dim_inner + 400
+            dim_in = cfg.gnn.dim_inner + 400 + 1024*2
         else:
             dim_in = cfg.gnn.dim_inner
         self.post_mp = GNNHead(dim_in=dim_in, dim_out=dim_out)
