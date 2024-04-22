@@ -310,6 +310,8 @@ def eval_spearmanr(y_true, y_pred):
 
     if y_true.ndim == 1:
         res_list.append(stats.spearmanr(y_true, y_pred)[0])
+    elif y_true.ndim == 2 and y_true.shape[1] == 1:
+        res_list.append(stats.spearmanr(y_true.flatten(), y_pred)[0])
     else:
         for i in range(y_true.shape[1]):
             # ignore nan values

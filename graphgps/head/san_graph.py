@@ -1,5 +1,5 @@
 import torch.nn as nn
-
+import torch
 import torch_geometric.graphgym.register as register
 from torch_geometric.graphgym import cfg
 from torch_geometric.graphgym.register import register_head
@@ -27,15 +27,21 @@ class SANGraphHead(nn.Module):
         self.FC_layers = nn.ModuleList(list_FC_layers)
         self.L = L
         self.activation = register.act_dict[cfg.gnn.act]()
+        if cfg.gnn.use_features:
+            self.batch_norms = nn.ModuleList([nn.BatchNorm1d(dim_in // 2 ** (l + 1)) for l in range(L)])
 
     def _apply_index(self, batch):
         return batch.graph_feature, batch.y
 
     def forward(self, batch):
         graph_emb = self.pooling_fun(batch.x, batch.batch)
+        if cfg.gnn.use_features:
+            graph_emb = torch.cat([graph_emb, batch.features], dim=1)
         for l in range(self.L):
             graph_emb = self.FC_layers[l](graph_emb)
             graph_emb = self.activation(graph_emb)
+            if cfg.gnn.use_features:
+                graph_emb = self.batch_norms[l](graph_emb)
         graph_emb = self.FC_layers[self.L](graph_emb)
         batch.graph_feature = graph_emb
         pred, label = self._apply_index(batch)
