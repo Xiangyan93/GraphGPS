@@ -71,6 +71,9 @@ def custom_set_run_dir(cfg, run_id):
         run_id (int): Main for-loop iter id (the random seed or dataset split)
     """
     cfg.run_dir = os.path.join(cfg.out_dir, str(run_id))
+    # Do nothing if the training is already finished.
+    if os.path.exists(f'{cfg.run_dir}/ckpt/{cfg.optim.max_epoch - 1}.ckpt'):
+        return 
     # Make output directory
     if cfg.train.auto_resume:
         os.makedirs(cfg.run_dir, exist_ok=True)
