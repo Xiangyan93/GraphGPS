@@ -26,6 +26,7 @@ setuptools.setup(
     entry_points={
         'console_scripts': [
             'graphgps_train=graphgps.run.run:graphgps_train',
+            'graphgps_predict=graphgps.run.run:graphgps_predict',
         ]
     },
     author='Yan Xiang',

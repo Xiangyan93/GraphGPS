@@ -79,3 +79,24 @@ class TrainArgs(Tap):
                         self.split_index_list.append(split_index)
                 else:
                     raise ValueError(f'cross_validation "{self.cross_validation}" not supported.')
+
+
+class PredictArgs(Tap):
+    cfg_file: str
+    """The configuration file path for the GPS model."""
+    checkpoint_dir: str
+    """Directory from which to load model checkpoints."""
+    test_path: str
+    """Path to CSV file containing testing data for which predictions will be made."""
+    preds_path: str
+    """Path to CSV file where predictions will be saved."""
+    smiles_columns: List[str] = None
+    """List of names of the columns containing SMILES strings.
+    By default, uses the first :code:`number_of_molecules` columns."""
+    features_generator: List[str] = None
+    """Method(s) of generating additional features_mol."""
+    n_jobs: int = 1
+    """The cpu numbers used for parallel computing."""
+    def process_args(self) -> None:
+        self.opts = ['wandb.use', 'False']
+        

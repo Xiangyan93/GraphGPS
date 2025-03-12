@@ -178,7 +178,8 @@ def custom_train(loggers, loaders, model, optimizer, scheduler):
         else:
             if is_eval_epoch(cur_epoch):
                 best_epoch = np.array([vp['loss'] for vp in val_perf]).argmin()
-                shutil.copyfile('%s/pred_%d.csv' % (loggers[2].out_dir, best_epoch), '%s/pred_best.csv' % (loggers[2].out_dir))
+                if os.path.exists('%s/pred_%d.csv' % (loggers[2].out_dir, best_epoch)):
+                    shutil.copyfile('%s/pred_%d.csv' % (loggers[2].out_dir, best_epoch), '%s/pred_best.csv' % (loggers[2].out_dir))
                 best_train = best_val = best_test = ""
                 if cfg.metric_best != 'auto':
                     # Select again based on val perf of `cfg.metric_best`.

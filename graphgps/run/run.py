@@ -1,5 +1,9 @@
-from graphgps.run.args import TrainArgs
+from graphgps.run.args import TrainArgs, PredictArgs
 from graphgps.run.utils import *
+from graphgps.data.data import DatasetFromCSVFile
+from torch_geometric.loader import DataLoader
+import numpy as np
+import pandas as pd
 
 
 def graphgps_train(arguments=None):
@@ -72,3 +76,54 @@ def graphgps_train(arguments=None):
         else:
             train_dict[cfg.train.mode](loggers, loaders, model, optimizer,
                                        scheduler)
+
+
+def graphgps_predict(arguments=None):
+    from torch_geometric.graphgym.config import cfg
+    args = PredictArgs().parse_args(arguments)
+    # Load config file
+    set_cfg(cfg)
+    load_cfg(cfg, args)
+    if args.features_generator is not None:
+        cfg.gnn.use_features = True
+        n_features = 0
+        for fg in args.features_generator:
+            if fg in ['rdkit_2d', 'rdkit_2d_normalized']:
+                n_features += 200
+            elif fg in ['morgan', 'morgan_count']:
+                n_features += 2048
+            else:
+                raise ValueError(f"Unknown features generator: {fg}")
+        cfg.gnn.n_features = n_features * len(args.smiles_columns)
+    dump_cfg(cfg)
+    # Set Pytorch environment
+    torch.set_num_threads(args.n_jobs)
+    # Set Model
+    auto_select_device()
+    model = create_model()
+    model = init_model_from_pretrained(
+        model, args.checkpoint_dir, freeze_main=True,
+        reset_prediction_head=False
+    )
+    logging.info(model)
+    logging.info(cfg)
+    cfg.params = params_count(model)
+    logging.info('Num parameters: %s', cfg.params)
+    # Prepare data
+    dataset = DatasetFromCSVFile(data_path=args.test_path,
+                                 smiles_columns=args.smiles_columns,
+                                 features_generator=args.features_generator,
+                                 root=cfg.out_dir)
+    dataloader = DataLoader(dataset, batch_size=cfg.train.batch_size,shuffle=False)
+    # Make predictions
+    predictions = []
+    with torch.no_grad():
+        model.eval()
+        for batch in dataloader:
+            batch.to(torch.device(cfg.accelerator))
+            output = model(batch)
+            predictions.append(output[0].detach().to('cpu', non_blocking=True))
+    predictions = np.concatenate(predictions)
+    df = pd.read_csv(args.test_path)
+    df['prediction'] = predictions
+    df.to_csv(args.preds_path, index=False)

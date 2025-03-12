@@ -22,7 +22,7 @@ class DatasetFromCSVFile(InMemoryDataset):
         self,
         data_path: str,
         smiles_columns: List[str],
-        target_columns: List[str],
+        target_columns: List[str] = None,
         features_generator: List[str] = None,
         task_type: Literal['classification', 'regression'] = 'regression',
         root: Optional[str] = None,
@@ -66,7 +66,9 @@ class DatasetFromCSVFile(InMemoryDataset):
                 # set aromatic bonds from 12 to 4, otherwise the bond embedding will be out of range.
                 mask = data.edge_attr[:, 0] == 12
                 data.edge_attr[mask, 0] = 4
-                if self.task_type == 'regression':
+                if self.target_columns is None:
+                    data.y = None
+                elif self.task_type == 'regression':
                     data.y = torch.tensor([df[self.target_columns].to_numpy()[j].tolist()], dtype=torch.float32).view(1, -1)
                 else:
                     data.y = torch.tensor([df[self.target_columns].to_numpy()[j].tolist()], dtype=torch.int32).view(1, -1)
