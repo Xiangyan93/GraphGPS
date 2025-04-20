@@ -39,7 +39,7 @@ class DatasetFromCSVFile(InMemoryDataset):
         self.task_type = task_type
         super(DatasetFromCSVFile, self).__init__(root, transform, pre_transform, pre_filter, log)
         path = osp.join(self.processed_dir, self.file_name + '.pt')
-        self.data, self.slices = torch.load(path)
+        self.data, self.slices = torch.load(path, weights_only=False)
 
     @property
     def raw_file_names(self) -> List[str]:
@@ -72,7 +72,7 @@ class DatasetFromCSVFile(InMemoryDataset):
                     data.y = torch.tensor([df[self.target_columns].to_numpy()[j].tolist()], dtype=torch.float32).view(1, -1)
                 else:
                     data.y = torch.tensor([df[self.target_columns].to_numpy()[j].tolist()], dtype=torch.int32).view(1, -1)
-                data.smiles = df['smiles'][j].split('.')
+                data.smiles = df[self.smiles_columns].iloc[j].tolist()
                 if len(fgs) > 0:
                     features = []
                     for smiles in data.smiles:
