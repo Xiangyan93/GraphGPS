@@ -61,18 +61,18 @@ class DatasetFromCSVFile(InMemoryDataset):
             for smiles_column in self.smiles_columns:
                 assert smiles_column in df.columns
             df['smiles'] = df.apply(lambda x: '.'.join([x[smiles_column] for smiles_column in self.smiles_columns]), axis=1)
-            for j in tqdm(df.index, total=len(df)):
-                data = from_smiles(df['smiles'][j])
+            for j, row in tqdm(df.iterrows(), total=len(df)):
+                data = from_smiles(row['smiles'])
                 # set aromatic bonds from 12 to 4, otherwise the bond embedding will be out of range.
                 mask = data.edge_attr[:, 0] == 12
                 data.edge_attr[mask, 0] = 4
                 if self.target_columns is None:
                     data.y = None
                 elif self.task_type == 'regression':
-                    data.y = torch.tensor([df[self.target_columns].to_numpy()[j].tolist()], dtype=torch.float32).view(1, -1)
+                    data.y = torch.tensor([row[self.target_columns].to_numpy().tolist()], dtype=torch.float32).view(1, -1)
                 else:
-                    data.y = torch.tensor([df[self.target_columns].to_numpy()[j].tolist()], dtype=torch.int32).view(1, -1)
-                data.smiles = df[self.smiles_columns].iloc[j].tolist()
+                    data.y = torch.tensor([row[self.target_columns].to_numpy().tolist()], dtype=torch.int32).view(1, -1)
+                data.smiles = row[self.smiles_columns].tolist()
                 if len(fgs) > 0:
                     features = []
                     for smiles in data.smiles:
