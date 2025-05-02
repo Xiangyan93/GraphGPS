@@ -23,12 +23,17 @@ setuptools.setup(
     name='graphgps',
     version=__version__,
     python_requires='>=3.10',
-    entry_points={
-        'console_scripts': [
-            'graphgps_train=graphgps.run.run:graphgps_train',
-            'graphgps_predict=graphgps.run.run:graphgps_predict',
-        ]
-    },
+    install_requires=[
+        'torch==2.6.0',
+        'torch-scatter',
+        'torch-sparse',
+        'torch-geometric',
+        'pytorch-lightning',
+        'yacs',
+        'torchmetrics',
+        'performer-pytorch',
+        'ogb'
+    ],
     author='Yan Xiang',
     author_email='',
     description='This is a easy-to-use command line version of GraphGPS.',
