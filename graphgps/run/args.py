@@ -21,6 +21,10 @@ class TrainArgs(Tap):
     """
     Name of the columns containing target values.
     """
+    features_columns: List[str] = None
+    """
+    List of names of the columns containing additional features_mol.
+    """
     features_generator: List[str] = None
     """Method(s) of generating additional features_mol."""
     cross_validation: Literal["n-fold", "Monte-Carlo"] = "Monte-Carlo"
@@ -93,6 +97,10 @@ class PredictArgs(Tap):
     smiles_columns: List[str] = None
     """List of names of the columns containing SMILES strings.
     By default, uses the first :code:`number_of_molecules` columns."""
+    features_columns: List[str] = None
+    """
+    List of names of the columns containing additional features_mol.
+    """
     features_generator: List[str] = None
     """Method(s) of generating additional features_mol."""
     n_jobs: int = 1

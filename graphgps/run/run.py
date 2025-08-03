@@ -17,21 +17,26 @@ def graphgps_train(arguments=None):
     cfg.dataset.data_path = args.data_path
     cfg.dataset.smiles_columns = args.smiles_columns
     cfg.dataset.target_columns = args.target_columns
+    cfg.dataset.features_columns = args.features_columns
     cfg.dataset.features_generator = args.features_generator
     cfg.dataset.separate_test_path = args.separate_test_path
     cfg.dataset.separate_val_path = args.separate_val_path
     cfg.output_details = args.output_details
-    if args.features_generator is not None:
+    if args.features_generator is not None or cfg.dataset.features_columns is not None:
         cfg.gnn.use_features = True
         n_features = 0
-        for fg in args.features_generator:
-            if fg in ['rdkit_2d', 'rdkit_2d_normalized']:
-                n_features += 200
-            elif fg in ['morgan', 'morgan_count']:
-                n_features += 2048
-            else:
-                raise ValueError(f"Unknown features generator: {fg}")
-        cfg.gnn.n_features = n_features * len(args.smiles_columns)
+        if args.features_generator is not None:
+            for fg in args.features_generator:
+                if fg in ['rdkit_2d', 'rdkit_2d_normalized']:
+                    n_features += 200
+                elif fg in ['morgan', 'morgan_count']:
+                    n_features += 2048
+                else:
+                    raise ValueError(f"Unknown features generator: {fg}")
+            n_features *= len(args.smiles_columns)
+        if cfg.dataset.features_columns is not None:
+            n_features += len(cfg.dataset.features_columns)
+        cfg.gnn.n_features = n_features
     dump_cfg(cfg)
     # Set Pytorch environment
     torch.set_num_threads(args.n_jobs)
@@ -84,17 +89,22 @@ def graphgps_predict(arguments=None):
     # Load config file
     set_cfg(cfg)
     load_cfg(cfg, args)
-    if args.features_generator is not None:
+    if args.features_generator is not None or args.features_columns is not None:
         cfg.gnn.use_features = True
         n_features = 0
-        for fg in args.features_generator:
-            if fg in ['rdkit_2d', 'rdkit_2d_normalized']:
-                n_features += 200
-            elif fg in ['morgan', 'morgan_count']:
-                n_features += 2048
-            else:
-                raise ValueError(f"Unknown features generator: {fg}")
-        cfg.gnn.n_features = n_features * len(args.smiles_columns)
+        if args.features_generator is not None:
+            for fg in args.features_generator:
+                if fg in ['rdkit_2d', 'rdkit_2d_normalized']:
+                    n_features += 200
+                elif fg in ['morgan', 'morgan_count']:
+                    n_features += 2048
+                else:
+                    raise ValueError(f"Unknown features generator: {fg}")
+            n_features *= len(args.smiles_columns)
+        if cfg.dataset.features_columns is not None:
+            n_features += len(cfg.dataset.features_columns)
+        cfg.gnn.n_features = n_features
+
     dump_cfg(cfg)
     # Set Pytorch environment
     torch.set_num_threads(args.n_jobs)

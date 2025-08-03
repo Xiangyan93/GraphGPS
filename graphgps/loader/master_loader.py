@@ -146,6 +146,7 @@ def load_dataset_master(format, name, dataset_dir):
             dataset = DatasetFromCSVFile(data_path=cfg.dataset.data_path,
                                          smiles_columns=cfg.dataset.smiles_columns,
                                          target_columns=cfg.dataset.target_columns,
+                                         features_columns=cfg.dataset.features_columns,
                                          features_generator=cfg.dataset.features_generator,
                                          task_type=cfg.dataset.task_type,
                                          root=cfg.out_dir)
@@ -153,6 +154,7 @@ def load_dataset_master(format, name, dataset_dir):
                 dataset_test = DatasetFromCSVFile(data_path=cfg.dataset.separate_test_path,
                                                   smiles_columns=cfg.dataset.smiles_columns,
                                                   target_columns=cfg.dataset.target_columns,
+                                                  features_columns=cfg.dataset.features_columns,
                                                   features_generator=cfg.dataset.features_generator,
                                                   task_type=cfg.dataset.task_type,
                                                   root=cfg.out_dir)
@@ -161,6 +163,7 @@ def load_dataset_master(format, name, dataset_dir):
                     dataset_val = DatasetFromCSVFile(data_path=cfg.dataset.separate_val_path,
                                                     smiles_columns=cfg.dataset.smiles_columns,
                                                     target_columns=cfg.dataset.target_columns,
+                                                    features_columns=cfg.dataset.features_columns,
                                                     features_generator=cfg.dataset.features_generator,
                                                     task_type=cfg.dataset.task_type,
                                                     root=cfg.out_dir)
