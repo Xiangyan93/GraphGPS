@@ -25,6 +25,7 @@ from graphgps.transform.task_preprocessing import task_specific_preprocessing
 from graphgps.transform.transforms import (pre_transform_in_memory,
                                            typecast_x, concat_x_and_pos,
                                            clip_graphs_to_size)
+from graphgps.data.data import DatasetFromCSVFile
 
 
 def log_loaded_dataset(dataset, format, name):
@@ -141,6 +142,35 @@ def load_dataset_master(format, name, dataset_dir):
             dataset = preformat_COCOSuperpixels(dataset_dir, name,
                                                 cfg.dataset.slic_compactness)
 
+        elif pyg_dataset_id == 'Custom':
+            dataset = DatasetFromCSVFile(data_path=cfg.dataset.data_path,
+                                         smiles_columns=cfg.dataset.smiles_columns,
+                                         target_columns=cfg.dataset.target_columns,
+                                         features_generator=cfg.dataset.features_generator,
+                                         task_type=cfg.dataset.task_type,
+                                         root=cfg.out_dir)
+            if cfg.dataset.separate_test_path is not None:
+                dataset_test = DatasetFromCSVFile(data_path=cfg.dataset.separate_test_path,
+                                                  smiles_columns=cfg.dataset.smiles_columns,
+                                                  target_columns=cfg.dataset.target_columns,
+                                                  features_generator=cfg.dataset.features_generator,
+                                                  task_type=cfg.dataset.task_type,
+                                                  root=cfg.out_dir)
+                assert dataset.file_name != dataset_test.file_name
+                if cfg.dataset.separate_val_path is not None:
+                    dataset_val = DatasetFromCSVFile(data_path=cfg.dataset.separate_val_path,
+                                                    smiles_columns=cfg.dataset.smiles_columns,
+                                                    target_columns=cfg.dataset.target_columns,
+                                                    features_generator=cfg.dataset.features_generator,
+                                                    task_type=cfg.dataset.task_type,
+                                                    root=cfg.out_dir)
+                    assert dataset.file_name != dataset_val.file_name
+                    assert dataset_test.file_name != dataset_val.file_name
+                    dataset = join_dataset_splits([dataset, dataset_val, dataset_test])
+                else:
+                    dataset = join_dataset_splits([dataset, dataset_test])
+            else:
+                dataset.split_idxs = cfg.dataset.split_idxs
         else:
             raise ValueError(f"Unexpected PyG Dataset identifier: {format}")
 
@@ -622,19 +652,30 @@ def join_dataset_splits(datasets):
     Returns:
         joint dataset with `split_idxs` property storing the split indices
     """
-    assert len(datasets) == 3, "Expecting train, val, test datasets"
+    if len(datasets) == 2:
+        n1, n2 = len(datasets[0]), len(datasets[1])
+        data_list = [datasets[0].get(i) for i in range(n1)] + \
+                    [datasets[1].get(i) for i in range(n2)]
 
-    n1, n2, n3 = len(datasets[0]), len(datasets[1]), len(datasets[2])
-    data_list = [datasets[0].get(i) for i in range(n1)] + \
-                [datasets[1].get(i) for i in range(n2)] + \
-                [datasets[2].get(i) for i in range(n3)]
+        datasets[0]._indices = None
+        datasets[0]._data_list = data_list
+        datasets[0].data, datasets[0].slices = datasets[0].collate(data_list)
+        split_idxs = [list(range(n1)),
+                      [],
+                      list(range(n1, n1 + n2))]
+        datasets[0].split_idxs = split_idxs
+    elif len(datasets) == 3:#  "Expecting train, val, test datasets"
+        n1, n2, n3 = len(datasets[0]), len(datasets[1]), len(datasets[2])
+        data_list = [datasets[0].get(i) for i in range(n1)] + \
+                    [datasets[1].get(i) for i in range(n2)] + \
+                    [datasets[2].get(i) for i in range(n3)]
 
-    datasets[0]._indices = None
-    datasets[0]._data_list = data_list
-    datasets[0].data, datasets[0].slices = datasets[0].collate(data_list)
-    split_idxs = [list(range(n1)),
-                  list(range(n1, n1 + n2)),
-                  list(range(n1 + n2, n1 + n2 + n3))]
-    datasets[0].split_idxs = split_idxs
+        datasets[0]._indices = None
+        datasets[0]._data_list = data_list
+        datasets[0].data, datasets[0].slices = datasets[0].collate(data_list)
+        split_idxs = [list(range(n1)),
+                      list(range(n1, n1 + n2)),
+                      list(range(n1 + n2, n1 + n2 + n3))]
+        datasets[0].split_idxs = split_idxs
 
     return datasets[0]

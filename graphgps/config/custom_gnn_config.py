@@ -9,3 +9,5 @@ def custom_gnn_cfg(cfg):
 
     # Use residual connections between the GNN layers.
     cfg.gnn.residual = False
+    # Use additional features for the molecules (e.g. rdkit_2d_normalized, morgan).
+    cfg.gnn.use_features = False

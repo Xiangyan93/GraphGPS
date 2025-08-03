@@ -100,7 +100,11 @@ class GPSModel(torch.nn.Module):
         self.layers = torch.nn.Sequential(*layers)
 
         GNNHead = register.head_dict[cfg.gnn.head]
-        self.post_mp = GNNHead(dim_in=cfg.gnn.dim_inner, dim_out=dim_out)
+        if cfg.gnn.use_features:
+            dim_in = cfg.gnn.dim_inner + cfg.gnn.n_features
+        else:
+            dim_in = cfg.gnn.dim_inner
+        self.post_mp = GNNHead(dim_in=dim_in, dim_out=dim_out)
 
     def forward(self, batch):
         for module in self.children():

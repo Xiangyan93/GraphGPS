@@ -6,7 +6,7 @@ import torch
 from scipy.stats import stats
 from sklearn.metrics import accuracy_score, precision_score, recall_score, \
     f1_score, roc_auc_score, mean_absolute_error, mean_squared_error, \
-    confusion_matrix
+    confusion_matrix, root_mean_squared_error
 from sklearn.metrics import r2_score
 from torch_geometric.graphgym import get_current_gpu_usage
 from torch_geometric.graphgym.config import cfg
@@ -195,7 +195,7 @@ class CustomLogger(Logger):
             'spearmanr': reformat(eval_spearmanr(true.numpy(),
                                                  pred.numpy())['spearmanr']),
             'mse': reformat(mean_squared_error(true, pred)),
-            'rmse': reformat(mean_squared_error(true, pred, squared=False)),
+            'rmse': reformat(root_mean_squared_error(true, pred)),
         }
 
     def update_stats(self, true, pred, loss, lr, time_used, params,
@@ -310,6 +310,8 @@ def eval_spearmanr(y_true, y_pred):
 
     if y_true.ndim == 1:
         res_list.append(stats.spearmanr(y_true, y_pred)[0])
+    elif y_true.ndim == 2 and y_true.shape[1] == 1:
+        res_list.append(stats.spearmanr(y_true.flatten(), y_pred)[0])
     else:
         for i in range(y_true.shape[1]):
             # ignore nan values

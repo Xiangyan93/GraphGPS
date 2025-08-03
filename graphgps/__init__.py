@@ -11,3 +11,6 @@ from .pooling import * # noqa
 from .stage import * # noqa
 from .train import * # noqa
 from .transform import * # noqa
+
+
+__version__ = '0.0.0'

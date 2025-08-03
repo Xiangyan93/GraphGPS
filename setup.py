@@ -1,44 +1,44 @@
-from distutils.core import setup
-from setuptools import find_packages
-import os
+import io
+import re
+import setuptools
 
-# User-friendly description from README.md
-current_directory = os.path.dirname(os.path.abspath(__file__))
-try:
-    with open(os.path.join(current_directory, 'README.md'), encoding='utf-8') as f:
-        long_description = f.read()
-except Exception:
-    long_description = ''
 
-setup(
-	# Name of the package
-	name='graphgps',
-	# Packages to include into the distribution
-	packages=find_packages('.'),
-	# Start with a small number and increase it with
-	# every change you make https://semver.org
-	version='1.2.0',
-	# Chose a license from here: https: //
-	# help.github.com / articles / licensing - a -
-	# repository. For example: MIT
-	license='',
-	# Short description of your library
-	description='',
-	# Long description of your library
-	long_description=long_description,
-	long_description_content_type='text/markdown',
-	# Your name
-	author='',
-	# Your email
-	author_email='',
-	# Either the link to your github or to your website
-	url='',
-	# Link from which the project can be downloaded
-	download_url='',
-	# List of keywords
-	keywords=[],
-	# List of packages to install with this one
-	install_requires=[],
-	# https://pypi.org/classifiers/
-	classifiers=[]
+with open('graphgps/__init__.py') as fd:
+    __version__ = re.search("__version__ = '(.*)'", fd.read()).group(1)
+
+
+def read(*filenames, **kwargs):
+    encoding = kwargs.get('encoding', 'utf-8')
+    sep = kwargs.get('sep', '\n')
+    buf = []
+    for filename in filenames:
+        with io.open(filename, encoding=encoding) as f:
+            buf.append(f.read())
+    return sep.join(buf)
+
+
+long_description = read('README.md')
+
+setuptools.setup(
+    name='graphgps',
+    version=__version__,
+    python_requires='>=3.10',
+    entry_points={
+        'console_scripts': [
+            'graphgps_train=graphgps.run.run:graphgps_train',
+            'graphgps_predict=graphgps.run.run:graphgps_predict',
+        ]
+    },
+    author='Yan Xiang',
+    author_email='',
+    description='This is a easy-to-use command line version of GraphGPS.',
+    long_description=long_description,
+    url='https://github.com/xiangyan93/GraphGPS',
+    packages=setuptools.find_packages(),
+    classifiers=[
+        'Programming Language :: Python',
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: OS Independent',
+    ],
+    include_package_data=False,
 )
